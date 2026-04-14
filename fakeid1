@@ -1,0 +1,80 @@
+// ==UserScript==
+// @name         Auto Replace 08 
+// @match        https://island.is/*
+// @match        https://www.island.is/*
+// @match        https://island.is/minarsidur/*
+// @match        https://island.is/minarsidur/min-gogn/yfirlit/minar-upplysingar
+// @run-at       document-end
+// @grant        none
+// ==/UserScript==
+
+(function () {
+  const REPLACERS = [
+    [/131010-2140/g, "250108-4000"],
+    [/Elias Haukur Einarsson/g, "Elias Máni Ólafsson"],
+  ];
+
+  function replaceText(t) {
+    let nt = t;
+    for (const [re, s] of REPLACERS) {
+      nt = nt.replace(re, s);
+    }
+    return nt;
+  }
+
+  function shouldSkip(node) {
+    const p = node.parentNode;
+    if (!p || p.nodeType !== 1) return false;
+    const tag = p.nodeName;
+    return tag === 'SCRIPT' || tag === 'STYLE' || tag === 'TEXTAREA';
+  }
+
+  function replaceInTextNodes(root) {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+    let node;
+    while ((node = walker.nextNode())) {
+      if (shouldSkip(node)) continue;
+      const t = node.nodeValue;
+      const nt = replaceText(t);
+      if (nt !== t) node.nodeValue = nt;
+    }
+  }
+
+  replaceInTextNodes(document.body);
+  if (document.title) document.title = replaceText(document.title);
+
+  const start = Date.now();
+  const interval = setInterval(() => {
+    replaceInTextNodes(document.body);
+    if (document.title) document.title = replaceText(document.title);
+    if (Date.now() - start > 20000) clearInterval(interval);
+  }, 500);
+
+  const obs = new MutationObserver((mutations) => {
+    for (const m of mutations) {
+      if (m.type === 'characterData') {
+        const n = m.target;
+        if (!shouldSkip(n)) {
+          const t = n.nodeValue;
+          const nt = replaceText(t);
+          if (nt !== t) n.nodeValue = nt;
+        }
+      }
+      for (const n of m.addedNodes) {
+        if (n.nodeType === 1) {
+          replaceInTextNodes(n);
+        } else if (n.nodeType === 3 && !shouldSkip(n)) {
+          const t = n.nodeValue;
+          const nt = replaceText(t);
+          if (nt !== t) n.nodeValue = nt;
+        }
+      }
+    }
+  });
+
+  obs.observe(document.documentElement, {
+    childList: true,
+    subtree: true,
+    characterData: true
+  });
+})();
