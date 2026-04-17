@@ -11,7 +11,7 @@
 (function () {
   const REPLACERS = [
     [/131010-2140/g, "250108-4000"],
-    [/Elias Haukur Einarsson/g, "Elias Máni Ólafsson"],
+    [/Elías Haukur Einarsson/g, "Elias Máni Ólafsson"],
   ];
 
   function replaceText(t) {
